@@ -44,3 +44,11 @@ json
 }
 Документация
 Swagger UI: http://127.0.0.1:8000/docs
+
+## CRUD /users
+
+- `GET /users` — все пользователи
+- `GET /users/{id}` — один (404, если нет)
+- `POST /users` — создать (201)
+- `PUT /users/{id}` — обновить (404, если нет)
+- `DELETE /users/{id}` — удалить (204)
