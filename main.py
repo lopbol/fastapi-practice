@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 import uvicorn
+from datetime import datetime
 
 # ========DATABASE============
 DATABASE_URL = "sqlite:///./users.db"
@@ -18,6 +19,7 @@ class UserDB(Base):
     name = Column(String(50), nullable=False)
     age = Column(Integer())
     email = Column(String(150), default="Не указан")
+    created_at = Column(DateTime, default=datetime.now)
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,12 +28,14 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     age: int = Field(ge=0, le=150)
     email: str = "Не указан"
+    created_at: datetime
 
 class UserResponse(BaseModel):
     id: int
     name: str
     age: int
     email: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
