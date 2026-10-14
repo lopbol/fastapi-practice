@@ -1,6 +1,27 @@
 # FastAPI Practice
 
-Учебный проект: первый API на FastAPI.
+Учебный проект: REST API на FastAPI с аутентификацией.
+
+## Стек технологий
+
+- **FastAPI** — веб-фреймворк
+- **SQLAlchemy** — ORM
+- **SQLite** — база данных
+- **Pydantic** — валидация данных
+- **passlib + bcrypt** — хеширование паролей
+- **Uvicorn** — ASGI-сервер
+
+## Структура проекта
+.
+├── main.py # FastAPI app + роуты
+├── database.py # engine, SessionLocal, Base, get_db
+├── models.py # SQLAlchemy-модели
+├── schemas.py # Pydantic-схемы
+├── security.py # хеширование паролей
+├── requirements.txt # зависимости
+└── README.md
+
+text
 
 ## Установка
 
@@ -9,46 +30,43 @@ pip install -r requirements.txt
 Запуск
 bash
 uvicorn main:app --reload
-Или:
-
-bash
-python main.py
-Сервер будет доступен на http://127.0.0.1:8000.
+Сервер: http://127.0.0.1:8000
+Swagger UI: http://127.0.0.1:8000/docs
 
 Эндпоинты
-GET
-GET / — приветствие
-
-GET /health — проверка здоровья
-
-GET /hello/{name} — приветствие по имени
-
-GET /square/{number} — квадрат числа
-
-GET /sum/{a}/{b} — сумма
-
-GET /multiply/{a}/{b} — произведение
-
-GET /divide/{a}/{b} — деление (400 при делении на ноль)
-
-POST
-POST /users — создать пользователя
-
-Тело запроса:
+Регистрация
+POST /register
 
 json
 {
+  "email": "anya@mail.ru",
   "name": "Аня",
   "age": 25,
-  "email": "anya@mail.ru"
+  "password": "qwerty123"
 }
-Документация
-Swagger UI: http://127.0.0.1:8000/docs
+Ответ: 201 Created
 
-## CRUD /users
+json
+{
+  "id": 1,
+  "email": "anya@mail.ru",
+  "name": "Аня",
+  "age": 25,
+  "created_at": "2026-10-14T21:45:00"
+}
+Логин
+POST /login
 
-- `GET /users` — все пользователи
-- `GET /users/{id}` — один (404, если нет)
-- `POST /users` — создать (201)
-- `PUT /users/{id}` — обновить (404, если нет)
-- `DELETE /users/{id}` — удалить (204)
+json
+{
+  "email": "anya@mail.ru",
+  "password": "qwerty123"
+}
+Ответ: 200 OK
+
+Безопасность
+Пароли хешируются через bcrypt (с солью)
+
+Пароль никогда не хранится и не возвращается в открытом виде
+
+При неверном email или пароле возвращается одинаковое сообщение (чтобы нельзя было выяснить, какие email зарегистрированы)
