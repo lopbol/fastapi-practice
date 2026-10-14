@@ -1,56 +1,15 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import Session
 import uvicorn
-from datetime import datetime
 
-# ========DATABASE============
-DATABASE_URL = "sqlite:///./users.db"
-engine = create_engine(DATABASE_URL, connect_args={'check_same_thread': False})
-SessionLocal = sessionmaker(bind=engine, autoflush=True, autocommit=False)
-Base = declarative_base()
+from database import Base, engine, get_db
+from models import UserDB
+from schemas import UserCreate, UserResponse
 
-#=========Models========
-class UserDB(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(50), nullable=False)
-    age = Column(Integer())
-    email = Column(String(150), default="Не указан")
-    created_at = Column(DateTime, default=datetime.now)
-
+# Создать таблицы
 Base.metadata.create_all(bind=engine)
 
-#=======Pydanic======
-class UserCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=50)
-    age: int = Field(ge=0, le=150)
-    email: str = "Не указан"
-    created_at: datetime
-
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    age: int
-    email: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-#=====depends=====
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-#==========app=======
 app = FastAPI()
-
 
 # READ ALL
 @app.get("/users", response_model=list[UserResponse])
@@ -68,7 +27,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 # CREATE
 @app.post("/users", response_model=UserResponse, status_code=201)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = UserDB(name = user.name, age = user.age, email = user.email)
+    db_user = UserDB(name=user.name, age=user.age, email=user.email)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
