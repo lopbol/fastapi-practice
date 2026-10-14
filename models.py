@@ -6,7 +6,8 @@ class UserDB(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(150), unique=True, nullable=False, index=True)  # ← уникальный
     name = Column(String(50), nullable=False)
     age = Column(Integer)
-    email = Column(String(150), default="Не указан")
+    hashed_password = Column(String(255), nullable=False)     # ← вместо password
     created_at = Column(DateTime, default=datetime.now)
