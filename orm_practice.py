@@ -13,11 +13,11 @@ class User(Base):
 
 DATABASE_URL = "sqlite:///orm_users.db"
 engine = create_engine(DATABASE_URL, connect_args={'check_same_thread': False})
-SessioLocal = sessionmaker(bind = engine, autoflush=False, autocommit=False)
+SessionLocal = sessionmaker(bind = engine, autoflush=False, autocommit=False)
 
 Base.metadata.create_all(bind=engine)
 
-db = SessioLocal()
+db = SessionLocal()
 
 user1 = User(name="Настя", age = 19, email = "ahomuuuutova@gmail.com")
 user2 = User(name="Илья", age = 20, email = "ilia47234@mail.ru")
