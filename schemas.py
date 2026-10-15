@@ -25,3 +25,13 @@ class UserResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = 'bearer'
+
+#обновление пользователя 
+class UpdateUser(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=50)
+    age: int | None = Field(None, ge=0, le=150)
+    model_config = {"extra": "forbid"}
