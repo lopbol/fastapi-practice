@@ -46,5 +46,13 @@ class PostResponse(BaseModel):
     title: str
     content : str
     user_id: int
+    author: UserShort
     class Config:
         from_attributes = True
+
+class UserShort(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+    
