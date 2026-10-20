@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 import uvicorn
 
 from database import Base, engine, get_db
-from models import UserDB
-from schemas import UserRegister, UserLogin, UserResponse, Token, UpdateUser
+from models import UserDB, PostDB
+from schemas import UserRegister, UserLogin, UserResponse, Token, UpdateUser, PostResponse, PostCreate
 from security import hash_password, verify_password, create_access_token, decode_token
 
 Base.metadata.create_all(bind=engine)
@@ -75,6 +75,10 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     # 3. Успех
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.get("/users/me/posts", response_model = list[PostResponse])
+def get_my_posts(current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    posts = db.query(PostDB).filter(PostDB.user_id == current_user.id).all()
+    return posts
 
 @app.patch("/users/me", response_model=UserResponse)
 def update(user_data: UpdateUser, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -92,11 +96,46 @@ def delite_users(current_user: UserDB = Depends(get_current_user), db: Session =
     db.commit()
     return None
 
-
-
 @app.get("/users/me", response_model=UserResponse)
 def get_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
+
+@app.post('/posts', response_model=PostResponse, status_code=201)
+def create_posts(post_data: PostCreate, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    new_post = PostDB(
+        title=post_data.title,
+        content=post_data.content,
+        user_id=current_user.id,
+        )
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return new_post
+
+@app.get("/posts", response_model=list[PostResponse])
+def get_all_posts(db: Session = Depends(get_db)):
+    return db.query(PostDB).all()
+
+@app.get("/posts/{post_id}", response_model=PostResponse)
+def get_one_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(PostDB).filter(PostDB.id == post_id).first()
+    if post is None:
+        raise HTTPException(status_code=404, detail="Пост не найден")
+    return post
+
+
+    
+
+@app.delete("/posts/{post_id}", status_code=204)
+def delete_my_post(post_id: int, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    post = db.query(PostDB).filter(PostDB.id==post_id).first()
+    if post is None:
+        raise HTTPException(status_code=404, detail="Пост не найден")
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Нельзя удалить чужой пост")
+    db.delete(post)
+    db.commit()
+    return None
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)

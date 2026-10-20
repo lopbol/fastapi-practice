@@ -35,3 +35,16 @@ class UpdateUser(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=50)
     age: int | None = Field(None, ge=0, le=150)
     model_config = {"extra": "forbid"}
+
+class PostCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    content: str = Field(min_length=1, max_length=2000)
+    model_config = {"extra": "forbid"}
+
+class PostResponse(BaseModel):
+    id: int
+    title: str
+    content : str
+    user_id: int
+    class Config:
+        from_attributes = True
