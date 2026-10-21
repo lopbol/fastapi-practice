@@ -8,8 +8,6 @@ from models import UserDB, PostDB
 from schemas import UserRegister, UserLogin, UserResponse, Token, UpdateUser, PostResponse, PostCreate
 from security import hash_password, verify_password, create_access_token, decode_token
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 security = HTTPBearer(scheme_name="JWT")
