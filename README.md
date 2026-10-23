@@ -18,8 +18,8 @@ REST API для отслеживания прогресса в тренажер�
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/ваш-логин/имя-репозитория.git
-   cd имя-репозитория
+   git clone https://github.com/lopbol/fastapi-practice.git
+   cd fastapi-practice
 Создайте и активируйте виртуальное окружение:
 
 bash
