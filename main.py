@@ -2,10 +2,11 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import uvicorn
+from sqlalchemy import func 
 
 from database import Base, engine, get_db
-from models import UserDB, PostDB
-from schemas import UserRegister, UserLogin, UserResponse, Token, UpdateUser, PostResponse, PostCreate
+from models import UserDB, ExerciseDB, WorkoutSetDB
+from schemas import UserRegister, UserLogin, UserResponse, Token, UpdateUser, ExerciseCreate, ExerciseResponse, WorkoutSetCreate, WorkoutSetResponse
 from security import hash_password, verify_password, create_access_token, decode_token
 
 app = FastAPI()
@@ -73,10 +74,15 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     # 3. Успех
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/users/me/posts", response_model = list[PostResponse])
+'''app.get("/users/me/posts", response_model = list[PostResponse])
 def get_my_posts(current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     posts = db.query(PostDB).filter(PostDB.user_id == current_user.id).all()
-    return posts
+    return posts'''
+
+@app.get("/users/me/workouts", response_model=list[WorkoutSetResponse])
+def get_my_workouts(current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    workout = db.query(WorkoutSetDB).filter(WorkoutSetDB.user_id == current_user.id).order_by(WorkoutSetDB.date.desc()).all()
+    return workout
 
 @app.patch("/users/me", response_model=UserResponse)
 def update(user_data: UpdateUser, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -89,7 +95,7 @@ def update(user_data: UpdateUser, current_user: UserDB = Depends(get_current_use
     return current_user
 
 @app.delete("/users/me", status_code=204)
-def delite_users(current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+def delite_me(current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     db.delete(current_user)
     db.commit()
     return None
@@ -98,7 +104,7 @@ def delite_users(current_user: UserDB = Depends(get_current_user), db: Session =
 def get_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
 
-@app.post('/posts', response_model=PostResponse, status_code=201)
+'''@app.post('/posts', response_model=PostResponse, status_code=201)
 def create_posts(post_data: PostCreate, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     new_post = PostDB(
         title=post_data.title,
@@ -135,5 +141,73 @@ def delete_my_post(post_id: int, current_user: UserDB = Depends(get_current_user
     db.commit()
     return None
 
+'''
+#Ручки дял упражнений
+@app.post("/exercise", response_model=ExerciseResponse, status_code=201)
+def create_exercise(exercise_data: ExerciseCreate, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    new_exercise = ExerciseDB(
+            name=exercise_data.name,
+            muscle_group=exercise_data.muscle_group
+            )
+    db.add(new_exercise)
+    db.commit()
+    db.refresh(new_exercise)
+    return new_exercise
+
+@app.get("/exercise", )
+def get_all_exercise(db: Session = Depends(get_db)):
+    return db.query(ExerciseDB).all()
+
+#Ручки для тренировок
+@app.post("/workouts", response_model=WorkoutSetResponse, status_code=201)
+def create_workouts(workouts_data: WorkoutSetCreate, current_user: UserDB = Depends(get_current_user),  db: Session = Depends(get_db)):
+    new_workouts = WorkoutSetDB(
+                weight=workouts_data.weight,
+                reps=workouts_data.reps,
+                exercise_id = workouts_data.exercise_id,
+                user_id = current_user.id
+                )
+    p = db.query(ExerciseDB).filter(ExerciseDB.id == workouts_data.exercise_id).first()
+    if p is None:
+        raise HTTPException(status_code=404, detail="Пост не найден")
+    db.add(new_workouts)
+    db.commit()
+    db.refresh(new_workouts)
+    return new_workouts
+    
+
+
+@app.get("/workouts/stats/{exercise_id}")
+def get_my_stats(exercise_id: int, current_user: UserDB = Depends(get_current_user),  db: Session = Depends(get_db)):
+    s = db.query(ExerciseDB).filter(ExerciseDB.id == exercise_id).first()
+    if s is None:
+        raise HTTPException(status_code=404, detail='Упражнение не найдено')
+    stats = db.query(
+        func.max(WorkoutSetDB.weight),
+        func.count(WorkoutSetDB.id),
+        func.sum(WorkoutSetDB.reps)
+    ).filter(WorkoutSetDB.user_id == current_user.id, WorkoutSetDB.exercise_id == exercise_id).first()
+    '''max_weight = func.max(db.query(WorkoutSetDB).filter(WorkoutSetDB.exercise_id==exercise_id).all)
+    total_sets = func.count(db.query(WorkoutSetDB).all())
+    total_reps = func.sum(db.query(WorkoutSetDB).filter(WorkoutSetDB.reps).all)'''
+    return {
+        "max_weight": stats[0],
+        "total_sets": stats[1],
+        "total_reps": stats[2]
+    }
+
+@app.delete("/workouts/{set_id}", status_code=204)
+def delete_my_workout(set_id: int, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    sets = db.query(WorkoutSetDB).filter(WorkoutSetDB.id==set_id).first()
+    if sets is None:
+        raise HTTPException(status_code=404, detail="Подход не найден")
+    if sets.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Нельзя удалить чужой подход")
+    db.delete(sets)
+    db.commit()
+    return None
+
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
+
+'''ОСТАЛОСЬ ДОДЕЛАТЬ ЭТОТ ФАЙЛ ИСПРАВИТЬ РУЧКИ!!!!!!!!!!!!'''

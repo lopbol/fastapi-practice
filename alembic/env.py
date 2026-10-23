@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from database import Base
-from models import UserDB, PostDB   # ← импортируем ВСЕ модели
+from models import UserDB, ExerciseDB, WorkoutSetDB   # ← импортируем ВСЕ модели
 
 target_metadata = Base.metadata
 

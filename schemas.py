@@ -36,23 +36,35 @@ class UpdateUser(BaseModel):
     age: int | None = Field(None, ge=0, le=150)
     model_config = {"extra": "forbid"}
 
-class PostCreate(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
-    content: str = Field(min_length=1, max_length=2000)
-    model_config = {"extra": "forbid"}
+class ExerciseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+    muscle_group: str = Field(min_length=1, max_length=200)
 
-class PostResponse(BaseModel):
+class ExerciseResponse(BaseModel):
     id: int
-    title: str
-    content : str
-    user_id: int
-    author: UserShort
+    name: str
+    muscle_group: str
     class Config:
         from_attributes = True
 
-class UserShort(BaseModel):
+class WorkoutSetCreate(BaseModel):
+    weight: float
+    reps: int
+    exercise_id: int
+
+class WorkoutSetResponseWithExercise(BaseModel):
     id: int
     name: str
     class Config:
         from_attributes = True
-    
+
+class WorkoutSetResponse(BaseModel):
+    id: int
+    weight: float
+    reps: int
+    date: datetime
+    exercise_id: int
+    user_id: int
+    exercise: WorkoutSetResponseWithExercise
+    class Config:
+        from_attributes = True

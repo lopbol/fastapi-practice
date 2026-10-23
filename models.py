@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from datetime import datetime
 from database import Base
 from sqlalchemy.orm import relationship
@@ -13,14 +13,26 @@ class UserDB(Base):
     hashed_password = Column(String(255), nullable=False)     # ← вместо password
     created_at = Column(DateTime, default=datetime.now)
 
-    posts = relationship("PostDB", back_populates="author", cascade="all, delete-orphan")
+    sets = relationship("WorkoutSetDB", back_populates="user", cascade="all, delete-orphan")
 
-class PostDB(Base):
-    __tablename__ = "posts"
+class ExerciseDB(Base):
+    __tablename__ = "exercises"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False)
-    content = Column(String(2000))
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(50), nullable=False)
+    muscle_group = Column(String(200))
+    
+    approach = relationship("WorkoutSetDB", back_populates="exercise", cascade='all, delete-orphan')
 
-    author = relationship("UserDB", back_populates="posts")
+class WorkoutSetDB(Base):
+    __tablename__ = "workoutSets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    weight = Column(Float, nullable=False)
+    reps = Column(Integer, nullable=False)
+    date = Column(DateTime, default=datetime.now)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    exercise_id = Column(Integer, ForeignKey("exercises.id"))
+
+    user = relationship("UserDB", back_populates="sets")
+    exercise = relationship("ExerciseDB", back_populates="approach")
