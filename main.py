@@ -162,6 +162,7 @@ def delete_my_workout(set_id: int, current_user: UserDB = Depends(get_current_us
     return None
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    '''uvicorn.run("main:app", reload=True)'''
+    port = int(os.getenv("PORT", 8000)) # Берем порт из окружения или 8000
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
 
-'''ОСТАЛОСЬ ДОДЕЛАТЬ ЭТОТ ФАЙЛ ИСПРАВИТЬ РУЧКИ!!!!!!!!!!!!'''

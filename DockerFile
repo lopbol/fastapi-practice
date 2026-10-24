@@ -1,0 +1,16 @@
+# 1. Базовый образ с Python
+FROM python:3.11-slim
+
+# 2. Устанавливаем рабочую директорию
+WORKDIR /app
+
+# 3. Копируем файл с зависимостями и устанавливаем их
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. Копируем весь остальной код проекта
+COPY . .
+
+# 5. Применяем миграции (создаём базу) и запускаем сервер
+# ВАЖНО: на Fly.io порт передаётся через переменную $PORT (по умолчанию 8080)
+CMD python -m alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8080
