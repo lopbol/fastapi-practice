@@ -1,3 +1,5 @@
+[![Python tests](https://github.com/lopbol/fastapi-practice/actions/workflows/ci.yml/badge.svg)](https://github.com/lopbol/fastapi-practice/actions/workflows/ci.yml)
+
 # 🏋️ Gym Tracker API
 
 REST API для отслеживания прогресса в тренажерном зале. Позволяет вести базу упражнений, записывать подходы (вес, повторения) и получать статистику по каждому упражнению.
