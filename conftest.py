@@ -1,58 +1,55 @@
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
+import pytest_asyncio
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from httpx import AsyncClient, ASGITransport
 from database import Base, get_db
 from main import app
 
 # 1. Создаём БД в памяти (каждый раз чистую)
-SQLALCHEMY_DATABASE_URL = "sqlite://"
-engine = create_engine(
+SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool,  # Важно для SQLite в памяти
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = async_sessionmaker(class_=AsyncSession, expire_on_commit=False, bind=engine)
 
 # 2. Фикстура, которая создаёт таблицы перед тестом и удаляет после
-@pytest.fixture(scope="function")
-def db():
-    Base.metadata.create_all(bind=engine)
-    try:
-        db_session = TestingSessionLocal()
-        yield db_session
-    finally:
-        db_session.close()
-        Base.metadata.drop_all(bind=engine)
-
+@pytest_asyncio.fixture(scope="function")
+async def db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with TestingSessionLocal() as session:
+        yield session
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 # 3. Фикстура клиента (подменяем зависимость get_db)
-@pytest.fixture(scope="function")
-def client(db):
+@pytest_asyncio.fixture(scope="function")
+async def client(db):
     def override_get_db():
-        try:
             yield db
-        finally:
-            db.close()
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    
     app.dependency_overrides.clear()
 
 # 4. Фикстура для получения токена (создаёт юзера и логинится)
-@pytest.fixture(scope="function")
-def auth_token(client):
+@pytest_asyncio.fixture(scope="function")
+async def auth_token(client):
     # Регистрация
-    client.post("/register", json={
+    await client.post("/register", json={
         "email": "test@example.com",
         "name": "Test User",
         "age": 25,
         "password": "password123"
     })
     # Логин
-    response = client.post("/login", json={
+    response = await client.post("/login", json={
         "email": "test@example.com",
         "password": "password123"
     })

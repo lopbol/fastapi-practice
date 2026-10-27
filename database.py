@@ -1,32 +1,33 @@
 import os
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
 
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Если DATABASE_URL начинается с postgres://, SQLAlchemy требует postgresql://
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# Заменяем драйверы на асинхронные
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif DATABASE_URL.startswith("sqlite://"):
+        DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://", 1)
 
-engine = create_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL, echo=False)
 
-# PRAGMA нужен ТОЛЬКО для SQLite. Мы оставим его на случай локальных тестов.
-if DATABASE_URL and DATABASE_URL.startswith("sqlite"):
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+# Асинхронная фабрика сессий
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Асинхронный генератор зависимостей
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
