@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:                             
       SECRET_KEY: "test_secret_key"  
-      DATABASE_URL: "sqlite:///./test.db"
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
